@@ -1,0 +1,163 @@
+<style>
+.cible {
+	display			:none;
+	position		:fixed;
+	border-radius	:50%;
+	transform: translate(-50%, -50%);
+	}
+</style>
+<body>
+<script>
+xMax=800
+yMax=600
+zone=document.getElementsByTagName('body')[0]
+
+function Cible(s, p) {
+	//E est un tableau qui récapitulera tous les events de la vie d'une cible
+	//avec un timestamp précis associé a chacun
+	this.E=[['create',performance.now()]]
+    
+    this.face=document.createElement('div')
+    this._pos=p
+    this.size=s
+	this.face.classList.add('cible')
+    this.face.style.width=this._size+'px'
+    this.face.style.height=this._size+'px'
+    this.face.style.backgroundColor='#F000F0'
+    this.visible=0
+    zone.appendChild(this.face)
+	//this.face.onclick=this.clicked //le 'this' de cette fonction sera this.face . pas bon
+	this.touched=Cible.prototype.touched.bind(this)
+	this.face.onmouseenter=this.touched
+	this.face.onmouseleave=this.touched
+	this.face.onmouseup=this.touched
+	this.face.onmousedown=this.touched
+	//behaviour
+	this.behave=function() {console.log(this,"doesnt know what to do")}
+	this.active_timer=undefined
+	this.react=function() {console.log(this,"doesnt know how to react")}
+    }
+	
+Cible.prototype.log=function(txt) {this.E.push([txt,performance.now()])}
+    
+   
+Cible.prototype.touched=function(e) {
+    //console.log(this)
+	this.E.push([e.type, e.timeStamp, e.offsetX, e.offsetY])
+	this.react(e)
+    }
+    
+Cible.prototype.show=function(){this.visible=1;this.face.style.display='flex'}
+
+Cible.prototype.hide=function(){this.visible=0; this.face.style.display = 'none' }
+
+Cible.prototype.toggleShow=function(){
+    if (this.visible) {this.hide();} 
+    else {this.show();} 
+    }
+
+
+//definir setter / getter .. turns out que c'est chiant quand on définit un objet via un constructeur
+Object.defineProperties(Cible.prototype,{
+	color:{
+		set:function(val) {
+			this.face.style.backgroundColor=val;
+			this.log('color '+val)
+			} ,
+		get:function() {return this.face.style.backgroundColor}
+		},
+	size:{
+		set:function(val) {
+		    //var diff=this._size-val
+			this._size=val
+			this.face.style.width=val+'px';
+			this.face.style.height=val+'px';
+			this.pos=this._pos
+			this.log('size '+val)
+			} ,
+		get:function() {return this._size}
+		},
+	pos:{
+	    set:function(val){
+	        this._pos=[val[0] , val[1]] ;
+			this.face.style.left=this._pos[0]+'px';
+			this.face.style.top=this._pos[1]+'px';
+	        this.log('pos '+this._pos[0]+' '+this._pos[1]);
+	        } ,
+	    get:function() {return this._pos}
+	}
+})
+
+
+
+function blink(minwait,maxwait,minstay,maxstay ,xMax, yMax){
+    var w=Math.random()*(maxwait-minwait)+minwait
+    var s=Math.random()*(maxstay-minstay)+minstay
+    position=[Math.random()*xMax,Math.random()*yMax]
+    this.active_timer=window.setTimeout(function(){
+        this.pos=position
+        this.show()
+        this.active_timer=window.setTimeout(function(){
+            this.hide()
+            this.behave()
+            }.bind(this),s)
+        }.bind(this),w)
+    }
+
+
+ function slide(minstay,maxstay,mindur,maxdur){
+    var d=Math.random()*(maxdur-mindur)+mindur
+    var s=Math.random()*(maxstay-minstay)+minstay
+    var position=[Math.random()*xMax,Math.random()*yMax]
+    this.active_timer=window.setTimeout(function(p){
+        this.show()
+        this.animation=this.face.animate([{top: this.face.style.top,left:this.face.style.left,width:"0px",height:"0px"},{top: p[1]+'px',left:p[0]+'px',width:this.face.style.width,height:this.face.style.height}],{duration:d,easing:"ease-in-out"});
+        
+        this.animation.onfinish=function(){console.log("coucou");
+            this.pos=p;
+            this.behave()}.bind(this,position)
+            
+    }.bind(this,position),s)
+    }
+    
+    
+function reaction1(e){
+    if(e.type=='mousedown'){
+            clearTimeout(this.active_timer)
+            this.hide()
+            this.pos=[Math.random()*xMax,Math.random()*yMax]
+            this.behave()
+        }
+    }
+    
+function jeu(){
+    x=new Cible(100, [200,200])
+    x.color='blue'
+    x.face.addEventListener('animationend',function(){
+           console.log("coucou")
+            })
+    x.react=reaction1
+    x.behave=slide.bind(x, 500, 1000, 200, 500)
+    x.behave()
+	
+
+	
+	y=new Cible(50, [300,300])
+	y.color='red'
+    y.react=x.react 
+    y.behave=slide.bind(y, 2000, 300, 200, 500)
+    y.behave()
+	
+	z=new Cible(50, [300,300])
+	z.color='green'
+    z.react=x.react 
+    z.behave=slide.bind(z, 1000, 300, 200, 500)
+    z.behave()
+}
+
+jeu()
+// ----------------- MAIN ----------------------------------
+//x.move(200,200)
+//y=new Cible(100)
+//y.move(200,300)
+</script>
